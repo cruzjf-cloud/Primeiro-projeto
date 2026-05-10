@@ -3,6 +3,8 @@ import { TEAMS, SPECIAL_STICKERS, TOTAL_STICKERS } from './data/albumData';
 import TeamView from './components/TeamView';
 import Dashboard from './components/Dashboard';
 import MissingList from './components/MissingList';
+import ScheduleView from './components/ScheduleView';
+import NewsstandFinder from './components/NewsstandFinder';
 import './App.css';
 
 const STORAGE_KEY = 'album-copa-2026';
@@ -18,7 +20,7 @@ function loadState() {
 
 export default function App() {
   const [collected, setCollected] = useState(loadState);
-  const [view, setView] = useState('album'); // 'album' | 'missing' | 'team'
+  const [view, setView] = useState('album'); // 'album' | 'missing' | 'team' | 'schedule' | 'newsstand'
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('');
@@ -85,17 +87,17 @@ export default function App() {
         </div>
         <Dashboard total={TOTAL_STICKERS} collected={totalCollected} />
         <nav className="app-nav">
-          <button
-            className={view === 'album' ? 'active' : ''}
-            onClick={() => setView('album')}
-          >
+          <button className={view === 'album' ? 'active' : ''} onClick={() => setView('album')}>
             📋 Álbum
           </button>
-          <button
-            className={view === 'missing' ? 'active' : ''}
-            onClick={() => setView('missing')}
-          >
+          <button className={view === 'missing' ? 'active' : ''} onClick={() => setView('missing')}>
             🔍 Faltam
+          </button>
+          <button className={view === 'schedule' ? 'active' : ''} onClick={() => setView('schedule')}>
+            📅 Jogos
+          </button>
+          <button className={view === 'newsstand' ? 'active' : ''} onClick={() => setView('newsstand')}>
+            📍 Bancas
           </button>
         </nav>
       </header>
@@ -170,6 +172,10 @@ export default function App() {
             collected={collected}
           />
         )}
+
+        {view === 'schedule' && <ScheduleView />}
+
+        {view === 'newsstand' && <NewsstandFinder />}
       </main>
     </div>
   );

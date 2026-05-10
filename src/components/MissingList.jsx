@@ -1,6 +1,29 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+
+function buildShareText(missingByTeam, missingSpecial) {
+  const lines = ['📋 *Figurinhas que faltam – Copa 2026*\n'];
+
+  if (missingSpecial.length > 0) {
+    lines.push('⭐ *Especiais:*');
+    lines.push(missingSpecial.map(s => s.number).join(', '));
+    lines.push('');
+  }
+
+  missingByTeam.forEach(({ team, missing }) => {
+    lines.push(`${team.flag} *${team.name}* (${missing.length}):`);
+    lines.push(missing.map(s => `#${s.n} ${s.label}`).join(' · '));
+    lines.push('');
+  });
+
+  const total =
+    missingByTeam.reduce((sum, x) => sum + x.missing.length, 0) + missingSpecial.length;
+  lines.push(`_Total: ${total} figurinhas_`);
+  return lines.join('\n');
+}
 
 export default function MissingList({ teams, specialStickers, collected }) {
+  const [copied, setCopied] = useState(false);
+
   const missingByTeam = useMemo(() => {
     return teams
       .map(team => ({
@@ -11,9 +34,32 @@ export default function MissingList({ teams, specialStickers, collected }) {
   }, [teams, collected]);
 
   const missingSpecial = specialStickers.filter(s => !collected[s.id]);
+  const totalMissing =
+    missingByTeam.reduce((sum, x) => sum + x.missing.length, 0) + missingSpecial.length;
 
-  const totalMissing = missingByTeam.reduce((sum, x) => sum + x.missing.length, 0)
-    + missingSpecial.length;
+  function copyToClipboard() {
+    const text = buildShareText(missingByTeam, missingSpecial);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      });
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  }
+
+  function shareWhatsApp() {
+    const text = buildShareText(missingByTeam, missingSpecial);
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  }
 
   if (totalMissing === 0) {
     return (
@@ -27,7 +73,17 @@ export default function MissingList({ teams, specialStickers, collected }) {
 
   return (
     <div className="missing-list">
-      <h2>Figurinhas que faltam — {totalMissing} no total</h2>
+      <div className="missing-header">
+        <h2>Faltam {totalMissing} figurinhas</h2>
+        <div className="share-buttons">
+          <button className="btn-share btn-copy" onClick={copyToClipboard}>
+            {copied ? '✅ Copiado!' : '📋 Copiar lista'}
+          </button>
+          <button className="btn-share btn-whatsapp" onClick={shareWhatsApp}>
+            💬 WhatsApp
+          </button>
+        </div>
+      </div>
 
       {missingSpecial.length > 0 && (
         <div className="missing-team-block">
