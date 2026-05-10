@@ -1,35 +1,21 @@
 import { useState } from 'react';
 import { TEAMS } from '../data/albumData';
+import { GROUP_MATCHES, KNOCKOUT_PHASES } from '../data/scheduleData';
 
-const KNOCKOUT_PHASES = [
-  { name: 'Fase de Grupos',   dates: '11 Jun – 2 Jul', note: '72 jogos · 12 grupos', icon: '⚽' },
-  { name: 'Oitavas de Final', dates: '4 – 7 Jul',      note: '16 jogos',              icon: '🔵' },
-  { name: 'Quartas de Final', dates: '9 – 12 Jul',     note: '8 jogos',               icon: '🟡' },
-  { name: 'Semifinais',       dates: '14 – 15 Jul',    note: '2 jogos',               icon: '🟠' },
-  { name: '3º Lugar',         dates: '18 Jul',         note: 'Estádio a confirmar',   icon: '🥉' },
-  { name: 'Final',            dates: '19 Jul',         note: 'MetLife Stadium · Nova York', icon: '🏆' },
-];
+const MD_LABEL = { 1: 'Rodada 1', 2: 'Rodada 2', 3: 'Rodada 3' };
 
-function getPairs(teams) {
-  const pairs = [];
-  for (let i = 0; i < teams.length; i++)
-    for (let j = i + 1; j < teams.length; j++)
-      pairs.push([teams[i], teams[j]]);
-  return pairs;
+function getFlag(name) {
+  const t = TEAMS.find(t => t.name === name);
+  return t ? t.flag : '🏳️';
 }
 
 export default function ScheduleView() {
   const [tab, setTab] = useState('grupos');
   const [activeGroup, setActiveGroup] = useState('A');
 
-  const groups = {};
-  TEAMS.forEach(t => {
-    if (!groups[t.group]) groups[t.group] = [];
-    groups[t.group].push(t);
-  });
-  const groupLetters = Object.keys(groups).sort();
-  const groupTeams = groups[activeGroup] || [];
-  const fixtures = getPairs(groupTeams);
+  const groupLetters = [...new Set(GROUP_MATCHES.map(m => m.group))].sort();
+  const groupMatches = GROUP_MATCHES.filter(m => m.group === activeGroup);
+  const matchdays = [1, 2, 3];
 
   return (
     <div className="schedule-view">
@@ -59,26 +45,28 @@ export default function ScheduleView() {
           </div>
 
           <div className="group-detail">
-            <div className="group-teams-list">
-              {groupTeams.map(t => (
-                <div key={t.id} className="group-team-row">
-                  <span className="gt-flag">{t.flag}</span>
-                  <span className="gt-name">{t.name}</span>
-                  <span className="gt-conf">{t.confederation}</span>
+            {matchdays.map(md => {
+              const mdMatches = groupMatches.filter(m => m.md === md);
+              if (!mdMatches.length) return null;
+              return (
+                <div key={md} className="matchday-block">
+                  <div className="matchday-label">{MD_LABEL[md]}</div>
+                  {mdMatches.map((m, i) => (
+                    <div key={i} className="fixture-row">
+                      <span className="fix-date">{m.date}</span>
+                      <span className="fix-team">
+                        {getFlag(m.home)} {m.home}
+                      </span>
+                      <span className="fix-vs">VS</span>
+                      <span className="fix-team right">
+                        {m.away} {getFlag(m.away)}
+                      </span>
+                      <span className="fix-city">{m.city}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            <h4 className="fixtures-title">Confrontos do Grupo {activeGroup}</h4>
-            <div className="fixtures-list">
-              {fixtures.map(([a, b], i) => (
-                <div key={i} className="fixture-row">
-                  <span className="fix-team">{a.flag} {a.name}</span>
-                  <span className="fix-vs">VS</span>
-                  <span className="fix-team right">{b.name} {b.flag}</span>
-                </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </>
       )}
@@ -99,7 +87,7 @@ export default function ScheduleView() {
       )}
 
       <p className="sched-disclaimer">
-        * Datas aproximadas · Horários e locais sujeitos à confirmação da FIFA
+        * Horários em horário local · Sujeito a confirmação da FIFA
       </p>
     </div>
   );
